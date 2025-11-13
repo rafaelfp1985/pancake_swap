@@ -61,7 +61,7 @@ def swap_tokens():
         wallet_address,
         deadline
     ).build_transaction({
-        'from': wallet_address,
+        'from': checksum_address,
         'gas': 200000,
         'nonce': nonce
     })
