@@ -2,6 +2,10 @@ from web3 import Web3
 import requests
 import time
 import json
+import streamlit as st
+
+#Get keys
+api_key = st.secrets["MY_API_KEY"]
 
 # Setup Web3 and wallet
 web3 = Web3(Web3.HTTPProvider('https://bsc-dataseed.binance.org/'))
