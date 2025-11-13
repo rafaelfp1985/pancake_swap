@@ -87,13 +87,13 @@ def get_latest_price_by_id(api_id):
     return token_price
 
 # Auto-refresh every 5 minutes
-st.markdown("""
-    <script>
-        setTimeout(function() {
-            window.location.reload();
-        }, 300000);
-    </script>
-""", unsafe_allow_html=True)
+#st.markdown("""
+#    <script>
+#        setTimeout(function() {
+#            window.location.reload();
+#        }, 300000);
+#    </script>
+#""", unsafe_allow_html=True)
 
 # UI
 try:
