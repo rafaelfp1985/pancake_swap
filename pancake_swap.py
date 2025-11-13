@@ -30,6 +30,8 @@ deadline = int(time.time()) + 60 * 20  # 20 minutes from now
 # Contract instance
 router_contract = web3.eth.contract(address=router_address, abi=router_abi)
 
+print("Hello!")
+
 # Function to get USDA price
 def get_usda_price():
     url = 'https://api.pancakeswap.info/api/v2/tokens/{usda_address}'
