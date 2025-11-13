@@ -8,7 +8,8 @@ import streamlit as st
 st.title("🦊 PancakeSwap Monitor")
 
 # Load secrets
-#api_key = st.secrets["MY_API_KEY"]
+api_key = st.secrets["COINMARKET_API_KEY"]
+st.write(f"Test API KEY...{api_key}")
 
 # Setup Web3
 st.write("Starting Web3 Component...")
