@@ -10,8 +10,10 @@ st.title("🦊 PancakeSwap Monitor")
 # Setup Web3
 st.write("Starting Web3 Component...")
 web3 = Web3(Web3.HTTPProvider('https://bsc-dataseed.binance.org/'))
-wallet_address = 'YOUR_WALLET_ADDRESS'
-private_key = 'YOUR_PRIVATE_KEY'
+wallet_address = st.secrets['wallet_address']
+private_key = st.secrets['private_key']
+st.write("wallet_address")
+st.write("private_key")
 
 # Load ABI
 st.write("Loading ABI file...")
@@ -81,7 +83,8 @@ def get_latest_price_by_id(api_id):
     response.raise_for_status()  # Raises an error for bad responses
 
     data = response.json()
-    st.json(data)
+    #Show JSON content if in debug mode
+    #st.json(data)
     token_price = data["data"][str(api_id)]["quote"]["USD"]["price"]
 
     return token_price
