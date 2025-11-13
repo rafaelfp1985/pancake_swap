@@ -106,8 +106,8 @@ try:
 
     if price < 1.96:
         st.success("✅ Price condition met! Ready to swap.")
-        #tx_hash = swap_tokens()
-        #st.write(f"Swap executed. Tx hash: `{tx_hash}`")
+        tx_hash = swap_tokens()
+        st.write(f"Swap executed. Tx hash: `{tx_hash}`")
     else:
         st.warning("⏳ Price too high. Waiting for drop below $0.96.")
 
