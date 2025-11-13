@@ -35,6 +35,7 @@ deadline = int(time.time()) + 60 * 20
 def get_usda_price():
     st.metric("Looking for the USDA price...")
     url = f'https://api.pancakeswap.info/api/v2/tokens/{usda_address}'
+    st.metric("Calling URL: {url}")
     response = requests.get(url)
     data = response.json()
     return float(data['data']['price'])
@@ -69,6 +70,7 @@ st.markdown("""
 
 # UI
 try:
+    st.metric("Request USDA price...")
     price = get_usda_price()
     st.metric("Current USDA Price", f"${price:.4f}")
 
