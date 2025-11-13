@@ -7,10 +7,6 @@ import streamlit as st
 # Title
 st.title("🦊 PancakeSwap Monitor")
 
-# Load secrets
-api_key = st.secrets["COINMARKET_API_KEY"]
-st.write(f"Test API KEY...{api_key}")
-
 # Setup Web3
 st.write("Starting Web3 Component...")
 web3 = Web3(Web3.HTTPProvider('https://bsc-dataseed.binance.org/'))
@@ -40,11 +36,14 @@ deadline = int(time.time()) + 60 * 20
 # Price fetcher
 def get_usda_price():
     st.write("Looking for the USDA price...")
-    url = f'https://api.pancakeswap.info/api/v2/tokens/{usda_address}'
-    st.write(f'Calling URL: {url}')
-    response = requests.get(url)
-    data = response.json()
-    return float(data['data']['price'])
+    #Pancakeswap API doesn't work. Let's move to Coinmarketcap API
+    #url = f'https://api.pancakeswap.info/api/v2/tokens/{usda_address}'
+    #st.write(f'Calling URL: {url}')
+    #response = requests.get(url)
+    #data = response.json()
+    #return float(data['data']['price'])
+    token_price = get_latest_price_by_id(37721)
+    return token_price
 
 # Swap function
 def swap_tokens():
@@ -64,6 +63,28 @@ def swap_tokens():
     signed_tx = web3.eth.account.sign_transaction(tx, private_key)
     tx_hash = web3.eth.send_raw_transaction(signed_tx.rawTransaction)
     return web3.to_hex(tx_hash)
+
+def get_latest_price_by_id(api_id):
+    url = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest"
+    api_key = st.secrets["COINMARKET_API_KEY"]# Replace with your actual API key
+
+    headers = {
+        "X-CMC_PRO_API_KEY": api_key,
+        "Accept": "application/json"
+    }
+
+    params = {
+        "id": api_id
+    }
+
+    response = requests.get(url, headers=headers, params=params)
+    response.raise_for_status()  # Raises an error for bad responses
+
+    data = response.json()
+    st.json(data)
+    token_price = data["data"][str(api_id)]["quote"]["USD"]["price"]
+
+    return token_price
 
 # Auto-refresh every 5 minutes
 st.markdown("""
