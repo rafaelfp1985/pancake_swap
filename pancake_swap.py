@@ -12,8 +12,8 @@ st.write("Starting Web3 Component...")
 web3 = Web3(Web3.HTTPProvider('https://bsc-dataseed.binance.org/'))
 wallet_address = st.secrets['wallet_address']
 private_key = st.secrets['private_key']
-st.write(wallet_address)
-st.write(private_key)
+#st.write(wallet_address)
+#st.write(private_key)
 
 # Load ABI
 st.write("Loading ABI file...")
@@ -104,7 +104,7 @@ try:
     price = get_usda_price()
     st.write("Current USDA Price", f"${price:.4f}")
 
-    if price < 0.96:
+    if price < 1.96:
         st.success("✅ Price condition met! Ready to swap.")
         #tx_hash = swap_tokens()
         #st.write(f"Swap executed. Tx hash: `{tx_hash}`")
