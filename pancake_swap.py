@@ -11,31 +11,36 @@ st.title("🦊 PancakeSwap Monitor")
 #api_key = st.secrets["MY_API_KEY"]
 
 # Setup Web3
+st.write("Starting Web3 Component...")
 web3 = Web3(Web3.HTTPProvider('https://bsc-dataseed.binance.org/'))
 wallet_address = 'YOUR_WALLET_ADDRESS'
 private_key = 'YOUR_PRIVATE_KEY'
 
 # Load ABI
+st.write("Loading ABI file...")
 with open('abi.json', 'r') as abi_file:
     router_abi = json.load(abi_file)
 
 # Contract setup
+st.write("Setting up contracts...")
 router_address = Web3.to_checksum_address('0x10ED43C718714eb63d5aA57B78B54704E256024E')
 router_contract = web3.eth.contract(address=router_address, abi=router_abi)
 
 # Tokens
+st.write("Setting up Tokens...")
 usdt_address = Web3.to_checksum_address('0x55d398326f99059fF775485246999027B3197955')
 usda_address = Web3.to_checksum_address('0x17EAfd08994305D8AcE37EfB82F1523177eC70EE')
 
 # Parameters
+st.write("Setting up parameters...")
 amount_in = web3.to_wei(100, 'ether')
 deadline = int(time.time()) + 60 * 20
 
 # Price fetcher
 def get_usda_price():
-    st.metric("Looking for the USDA price...")
+    st.write("Looking for the USDA price...")
     url = f'https://api.pancakeswap.info/api/v2/tokens/{usda_address}'
-    st.metric("Calling URL: {url}")
+    st.write("Calling URL: {url}")
     response = requests.get(url)
     data = response.json()
     return float(data['data']['price'])
@@ -70,9 +75,9 @@ st.markdown("""
 
 # UI
 try:
-    st.metric("Request USDA price...")
+    st.write("Request USDA price...")
     price = get_usda_price()
-    st.metric("Current USDA Price", f"${price:.4f}")
+    st.write("Current USDA Price", f"${price:.4f}")
 
     if price < 0.96:
         st.success("✅ Price condition met! Ready to swap.")
