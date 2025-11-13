@@ -4,42 +4,41 @@ import time
 import json
 import streamlit as st
 
-#Get keys
-api_key = st.secrets["MY_API_KEY"]
+# Title
+st.title("🦊 PancakeSwap Monitor")
 
-# Setup Web3 and wallet
+# Load secrets
+#api_key = st.secrets["MY_API_KEY"]
+
+# Setup Web3
 web3 = Web3(Web3.HTTPProvider('https://bsc-dataseed.binance.org/'))
 wallet_address = 'YOUR_WALLET_ADDRESS'
 private_key = 'YOUR_PRIVATE_KEY'
 
-# PancakeSwap Router v2
-router_address = Web3.to_checksum_address('0x10ED43C718714eb63d5aA57B78B54704E256024E')
-#router_abi = [...]  # Insert PancakeSwap Router ABI here
-# Load ABI from abi.json
+# Load ABI
 with open('abi.json', 'r') as abi_file:
     router_abi = json.load(abi_file)
 
-# Token addresses
-usdt_address = Web3.to_checksum_address('0x55d398326f99059fF775485246999027B3197955')  # USDT
-usda_address = Web3.to_checksum_address('0x17EAfd08994305D8AcE37EfB82F1523177eC70EE')  # Replace with actual USDA token address
-
-# Swap parameters
-amount_in = web3.to_wei(100, 'ether')  # 100 USDT
-deadline = int(time.time()) + 60 * 20  # 20 minutes from now
-
-# Contract instance
+# Contract setup
+router_address = Web3.to_checksum_address('0x10ED43C718714eb63d5aA57B78B54704E256024E')
 router_contract = web3.eth.contract(address=router_address, abi=router_abi)
 
-print("Hello!")
+# Tokens
+usdt_address = Web3.to_checksum_address('0x55d398326f99059fF775485246999027B3197955')
+usda_address = Web3.to_checksum_address('0x17EAfd08994305D8AcE37EfB82F1523177eC70EE')
 
-# Function to get USDA price
+# Parameters
+amount_in = web3.to_wei(100, 'ether')
+deadline = int(time.time()) + 60 * 20
+
+# Price fetcher
 def get_usda_price():
-    url = 'https://api.pancakeswap.info/api/v2/tokens/{usda_address}'
+    url = f'https://api.pancakeswap.info/api/v2/tokens/{usda_address}'
     response = requests.get(url)
     data = response.json()
     return float(data['data']['price'])
 
-# Function to execute swap
+# Swap function
 def swap_tokens():
     nonce = web3.eth.get_transaction_count(wallet_address)
     tx = router_contract.functions.swapExactTokensForTokens(
@@ -56,20 +55,28 @@ def swap_tokens():
 
     signed_tx = web3.eth.account.sign_transaction(tx, private_key)
     tx_hash = web3.eth.send_raw_transaction(signed_tx.rawTransaction)
-    print(f'Swap executed. Tx hash: {web3.to_hex(tx_hash)}')
+    return web3.to_hex(tx_hash)
 
-# Monitor price and swap
-while True:
-    try:
-        price = get_usda_price()
-        print(f'Current USDA price: {price}')
-        if price < 0.96:
-            print('Price condition met. Executing swap...')
-            #swap_tokens()
-            break
-        else:
-            print('Price too high. Waiting...')
-        time.sleep(60)
-    except Exception as e:
-        print(f'Error: {e}')
-        time.sleep(60)
+# Auto-refresh every 5 minutes
+st.markdown("""
+    <script>
+        setTimeout(function() {
+            window.location.reload();
+        }, 300000);
+    </script>
+""", unsafe_allow_html=True)
+
+# UI
+try:
+    price = get_usda_price()
+    st.metric("Current USDA Price", f"${price:.4f}")
+
+    if price < 0.96:
+        st.success("✅ Price condition met! Ready to swap.")
+        #tx_hash = swap_tokens()
+        #st.write(f"Swap executed. Tx hash: `{tx_hash}`")
+    else:
+        st.warning("⏳ Price too high. Waiting for drop below $0.96.")
+
+except Exception as e:
+    st.error(f"Error: {e}")
