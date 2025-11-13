@@ -33,6 +33,7 @@ deadline = int(time.time()) + 60 * 20
 
 # Price fetcher
 def get_usda_price():
+    st.metric("Looking for the USDA price...")
     url = f'https://api.pancakeswap.info/api/v2/tokens/{usda_address}'
     response = requests.get(url)
     data = response.json()
