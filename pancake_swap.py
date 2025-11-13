@@ -51,7 +51,8 @@ def get_usda_price():
 def swap_tokens():
     st.write("Starting wallet...")
     checksum_address = Web3.to_checksum_address(wallet_address)
-    nonce = web3.eth.get_transaction_count(wallet_address)
+    #nonce = web3.eth.get_transaction_count(wallet_address)
+    nonce = web3.eth.get_transaction_count(checksum_address)
     st.write("Start swapping...")
     tx = router_contract.functions.swapExactTokensForTokens(
         amount_in,
