@@ -40,7 +40,7 @@ deadline = int(time.time()) + 60 * 20
 def get_usda_price():
     st.write("Looking for the USDA price...")
     url = f'https://api.pancakeswap.info/api/v2/tokens/{usda_address}'
-    st.write("Calling URL: {url}")
+    st.write(f'Calling URL: {url}')
     response = requests.get(url)
     data = response.json()
     return float(data['data']['price'])
