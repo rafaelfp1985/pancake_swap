@@ -58,7 +58,7 @@ def swap_tokens():
         amount_in,
         0,
         [usdt_address, usda_address],
-        wallet_address,
+        checksum_address,
         deadline
     ).build_transaction({
         'from': checksum_address,
