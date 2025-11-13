@@ -37,8 +37,9 @@ usda_address = Web3.to_checksum_address('0x17EAfd08994305D8AcE37EfB82F1523177eC7
 
 # Parameters
 st.write("Setting up parameters...")
-amount_in = web3.to_wei(100, 'ether')
-deadline = int(time.time()) + 60 * 20
+amount_in = 100 * 10**18            #web3.to_wei(100, 'ether')
+slippage_tolerance = 0.005          # 0.5%
+amount_out_min = int(amount_in * (1 - slippage_tolerance))
 
 # Price fetcher
 def get_usda_price():
@@ -59,9 +60,10 @@ def swap_tokens():
     #nonce = web3.eth.get_transaction_count(wallet_address)
     nonce = web3.eth.get_transaction_count(checksum_address)
     st.write("Start swapping...")
+    deadline = int(time.time()) + 60 * 20
     tx = router_contract.functions.swapExactTokensForTokens(
         amount_in,
-        0,
+        amount_out_min,
         [usdt_address, usda_address],
         checksum_address,
         deadline
