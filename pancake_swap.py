@@ -3,6 +3,7 @@ from web3.middleware import geth_poa_middleware
 
 import requests
 import time
+import datetime
 import json
 import streamlit as st
 
@@ -11,6 +12,7 @@ st.title("🦊 PancakeSwap Monitor")
 
 # Setup Web3
 st.write("Starting Web3 Component...")
+st.write("🕒 Timestamp: ", datetime.datetime.now().strftime("%d.%m.%Y %H:%M:%S"))
 web3 = Web3(Web3.HTTPProvider('https://bsc-dataseed.binance.org/'))
 web3.middleware_onion.inject(geth_poa_middleware, layer=0)
 wallet_address = st.secrets['wallet_address']
