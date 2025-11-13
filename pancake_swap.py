@@ -104,9 +104,9 @@ try:
     price = get_usda_price()
     st.write("Current USDA Price", f"${price:.4f}")
 
-    if price < 1.96:
+    if price < 0.96:
         st.success("✅ Price condition met! Ready to swap.")
-        tx_hash = swap_tokens()
+        #tx_hash = swap_tokens()
         st.write(f"Swap executed. Tx hash: `{tx_hash}`")
     else:
         st.warning("⏳ Price too high. Waiting for drop below $0.96.")
