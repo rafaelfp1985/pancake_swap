@@ -108,9 +108,9 @@ web3.middleware_onion.inject(geth_poa_middleware, layer=0)
 
 # Load ABI
 st.write("Loading ABI file...")
-#with open('abi.json', 'r') as abi_file:
-#    router_abi = json.load(abi_file)
-router_abi = [
+with open('abi.json', 'r') as abi_file:
+    router_abi = json.load(abi_file)
+token_abi = [
     {
         "constant": True,
         "inputs": [{"name": "_owner", "type": "address"}],
@@ -148,10 +148,10 @@ amount_out_min = int(amount_in * (1 - slippage_tolerance))
 #Checking Tokens balance
 bnb_balance = web3.eth.get_balance(Web3.to_checksum_address(wallet_address))
 bnb_balance = web3.from_wei(bnb_balance, 'ether')
-st.write("BNB balance", f"${bnb_balance:.6f}")
-usdt_balance = get_token_balance(usdt_address, router_abi, wallet_address)
+st.write("BNB balance", f"{bnb_balance:.6f}")
+usdt_balance = get_token_balance(usdt_address, token_abi, wallet_address)
 st.write("USDT balance", f"${usdt_balance:.4f}")
-usda_balance = get_token_balance(usda_address, router_abi, wallet_address)
+usda_balance = get_token_balance(usda_address, token_abi, wallet_address)
 st.write("USDA balance", f"${usda_balance:.4f}")
 
 # UI
