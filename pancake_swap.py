@@ -13,6 +13,8 @@ private_key = st.secrets['private_key']
 #Get token balance
 def get_token_balance(token_address: str, abi: list, wallet_address: str) -> float:
     # Create contract object
+    token_address = web3.to_checksum_address(token_address)
+    wallet_address = web3.to_checksum_address(wallet_address)
     contract = web3.eth.contract(address=token_address, abi=abi)
 
     # Get raw balance and decimals
