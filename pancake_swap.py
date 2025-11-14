@@ -129,7 +129,7 @@ slippage_tolerance = 0.005          # 0.5%
 amount_out_min = int(amount_in * (1 - slippage_tolerance))
 
 #Checking Tokens balance
-bnb_balance = web3.eth.get_balance(wallet_address)
+bnb_balance = web3.eth.get_balance(Web3.to_checksum_address(wallet_address))
 print(web3.from_wei(bnb_balance, 'ether'))
 usdt_balance = get_token_balance(usdt_address, router_abi, wallet_address)
 st.write("USDT balance", f"${usdt_balance:.4f}")
