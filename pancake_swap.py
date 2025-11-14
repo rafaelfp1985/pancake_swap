@@ -7,40 +7,22 @@ import datetime
 import json
 import streamlit as st
 
-# Title
-st.title("🦊 PancakeSwap Monitor")
-
-# Setup Web3
-st.write("Starting Web3 Component...")
-st.write("🕒 Timestamp: ", datetime.datetime.now().strftime("%d.%m.%Y %H:%M:%S"))
-web3 = Web3(Web3.HTTPProvider('https://bsc-dataseed.binance.org/'))
-web3.middleware_onion.inject(geth_poa_middleware, layer=0)
 wallet_address = st.secrets['wallet_address']
 private_key = st.secrets['private_key']
-#st.write(wallet_address)
-#st.write(private_key)
 
-# Load ABI
-st.write("Loading ABI file...")
-with open('abi.json', 'r') as abi_file:
-    router_abi = json.load(abi_file)
+#Get token balance
+def get_token_balance(token_address: str, abi: list, wallet_address: str) -> float:
+    # Create contract object
+    contract = web3.eth.contract(address=token_address, abi=abi)
 
-# Contract setup
-st.write("Setting up contracts...")
-router_address = Web3.to_checksum_address('0x10ED43C718714eb63d5aA57B78B54704E256024E')
-router_contract = web3.eth.contract(address=router_address, abi=router_abi)
+    # Get raw balance and decimals
+    balance = contract.functions.balanceOf(wallet_address).call()
+    decimals = contract.functions.decimals().call()
 
-# Tokens
-st.write("Setting up Tokens...")
-usdt_address = Web3.to_checksum_address('0x55d398326f99059fF775485246999027B3197955')
-usda_address = Web3.to_checksum_address('0x17EAfd08994305D8AcE37EfB82F1523177eC70EE')
-
-# Parameters
-st.write("Setting up parameters...")
-amount_in = 100 * 10**18            #web3.to_wei(100, 'ether')
-slippage_tolerance = 0.005          # 0.5%
-amount_out_min = int(amount_in * (1 - slippage_tolerance))
-
+    # Convert to human-readable
+    readable_balance = balance / (10 ** decimals)
+    return readable_balance
+    
 # Price fetcher
 def get_usda_price():
     st.write("Looking for the USDA price...")
@@ -109,6 +91,46 @@ def get_latest_price_by_id(api_id):
 #        }, 300000);
 #    </script>
 #""", unsafe_allow_html=True)
+
+# Title
+st.title(f"🦊 PancakeSwap Monitor - {wallet_address}")
+
+# Setup Web3
+st.write("Starting Web3 Component...")
+st.write("🕒 Timestamp: ", datetime.datetime.now().strftime("%d.%m.%Y %H:%M:%S"))
+web3 = Web3(Web3.HTTPProvider('https://bsc-dataseed.binance.org/'))
+web3.middleware_onion.inject(geth_poa_middleware, layer=0)
+
+#st.write(wallet_address)
+#st.write(private_key)
+
+# Load ABI
+st.write("Loading ABI file...")
+with open('abi.json', 'r') as abi_file:
+    router_abi = json.load(abi_file)
+
+# Contract setup
+st.write("Setting up contracts...")
+router_address = Web3.to_checksum_address('0x10ED43C718714eb63d5aA57B78B54704E256024E')
+router_contract = web3.eth.contract(address=router_address, abi=router_abi)
+
+# Tokens
+st.write("Setting up Tokens...")
+usdt_address = Web3.to_checksum_address('0x55d398326f99059fF775485246999027B3197955')
+usda_address = Web3.to_checksum_address('0x17EAfd08994305D8AcE37EfB82F1523177eC70EE')
+#bnb_address = Web3.to_checksum_address('0x17EAfd08994305D8AcE37EfB82F1523177eC70EE')
+
+# Parameters
+st.write("Setting up parameters...")
+amount_in = 100 * 10**18            #web3.to_wei(100, 'ether')
+slippage_tolerance = 0.005          # 0.5%
+amount_out_min = int(amount_in * (1 - slippage_tolerance))
+
+#Checking Tokens balance
+bnb_balance = web3.eth.get_balance(wallet_address)
+print(web3.from_wei(bnb_balance, 'ether'))
+usdt_balance = get_token_balance(usdt_address, router_abi, wallet_address)
+usda_balance = get_token_balance(usda_address, router_abi, wallet_address)
 
 # UI
 try:
