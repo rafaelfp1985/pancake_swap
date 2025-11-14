@@ -108,8 +108,25 @@ web3.middleware_onion.inject(geth_poa_middleware, layer=0)
 
 # Load ABI
 st.write("Loading ABI file...")
-with open('abi.json', 'r') as abi_file:
-    router_abi = json.load(abi_file)
+#with open('abi.json', 'r') as abi_file:
+#    router_abi = json.load(abi_file)
+router_abi = [
+    {
+        "constant": True,
+        "inputs": [{"name": "_owner", "type": "address"}],
+        "name": "balanceOf",
+        "outputs": [{"name": "balance", "type": "uint256"}],
+        "type": "function",
+    },
+    {
+        "constant": True,
+        "inputs": [],
+        "name": "decimals",
+        "outputs": [{"name": "", "type": "uint8"}],
+        "type": "function",
+    },
+]
+
 
 # Contract setup
 st.write("Setting up contracts...")
