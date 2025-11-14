@@ -137,7 +137,6 @@ router_contract = web3.eth.contract(address=router_address, abi=router_abi)
 st.write("Setting up Tokens...")
 usdt_address = Web3.to_checksum_address('0x55d398326f99059fF775485246999027B3197955')
 usda_address = Web3.to_checksum_address('0x17EAfd08994305D8AcE37EfB82F1523177eC70EE')
-#bnb_address = Web3.to_checksum_address('0x17EAfd08994305D8AcE37EfB82F1523177eC70EE')
 
 # Parameters
 st.write("Setting up parameters...")
@@ -160,6 +159,7 @@ try:
     price = get_usda_price()
     st.write("Current USDA Price", f"${price:.4f}")
 
+    #Check if minimum price is reached. If yes, buy it
     if price < 1.96:
         st.success("✅ Price condition met! Ready to swap.")
         tx_hash = swap_tokens()
