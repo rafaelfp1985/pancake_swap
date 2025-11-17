@@ -16,7 +16,7 @@ def access_secret_payload(secret_id, version):
     
     # Your project ID and the name of the secret
     PROJECT_ID = "478915354588"
-    SECRET_ID = "secret_id" #"CoinmarketCap_APIKey"
+    SECRET_ID = secret_id #"CoinmarketCap_APIKey"
 
     # The full resource name of the secret version.
     # Using 'latest' is okay for simplicity here, but use a specific version (e.g., :2) in production.
@@ -196,7 +196,7 @@ def main_loop():
                 print("⏳ Price too high. Waiting for drop below $0.96.")
             
             # Sleep for a period
-            time.sleep(60) # Sleeps for 60 seconds (1 minute)
+            time.sleep(300) # Sleeps for 300 seconds (5 minute)
 
     except Exception as e:
         print(f"Error: {e}")
