@@ -1,4 +1,1 @@
 # Ignore environment and secret files
-.env
-.toml
-/.streamlit
