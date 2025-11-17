@@ -1,5 +1,6 @@
 from web3 import Web3
 from web3.middleware import geth_poa_middleware
+from google.cloud import secretmanager
 
 import requests
 import time
@@ -9,6 +10,36 @@ import sys
 
 wallet_address = '0x5340a3b2e8e05d6b083647fcb6ec93ee7b569c39' #st.secrets['wallet_address']
 private_key = '0x5340a3b2e8e05d6b083647fcb6ec93ee7b569c39' #st.secrets['private_key']
+
+def access_secret_payload():
+    """Accesses the payload of the secret and returns it as a string."""
+    
+    # Your project ID and the name of the secret
+    PROJECT_ID = "478915354588"
+    SECRET_ID = "CoinmarketCap_APIKey"
+
+    # The full resource name of the secret version.
+    # Using 'latest' is okay for simplicity here, but use a specific version (e.g., :2) in production.
+    SECRET_VERSION_NAME = f"projects/{PROJECT_ID}/secrets/{SECRET_ID}/versions/1"
+
+    # 1. Instantiate the Secret Manager client.
+    # The client automatically handles authentication using the Service Account
+    # attached to the Cloud Run instance, VM, or local environment.
+    client = secretmanager.SecretManagerServiceClient()
+
+    try:
+        # 2. Call the API to get the secret version.
+        response = client.access_secret_version(name=SECRET_VERSION_NAME)
+        
+        # 3. Decode the secret payload (which is returned as bytes).
+        secret_payload = response.payload.data.decode("UTF-8")
+        
+        return secret_payload
+
+    except Exception as e:
+        print(f"Error accessing secret: {e}")
+        # In a real application, you might raise an exception or handle this failure
+        return None
 
 #Get token balance
 def get_token_balance(web3, token_address: str, abi: list, wallet_address: str) -> float:
@@ -64,7 +95,7 @@ def swap_tokens(web3, amount_in, amount_out_min, router_contract, usdt_address, 
 
 def get_latest_price_by_id(api_id):
     url = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest"
-    api_key = '' #st.secrets["COINMARKET_API_KEY"]# Replace with your actual API key
+    api_key = access_secret_payload() #st.secrets["COINMARKET_API_KEY"]# Replace with your actual API key
 
     headers = {
         "X-CMC_PRO_API_KEY": api_key,
