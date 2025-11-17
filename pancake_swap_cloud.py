@@ -95,7 +95,7 @@ def swap_tokens(web3, wallet_address, private_key, amount_in, amount_out_min, ro
 
 def get_latest_price_by_id(api_id):
     url = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest"
-    api_key = access_secret_payload("CoinmarketCap_APIKey") #st.secrets["COINMARKET_API_KEY"]# Replace with your actual API key
+    api_key = access_secret_payload("CoinmarketCap_APIKey","1") #st.secrets["COINMARKET_API_KEY"]# Replace with your actual API key
 
     headers = {
         "X-CMC_PRO_API_KEY": api_key,
