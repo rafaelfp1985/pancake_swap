@@ -7,8 +7,8 @@ import datetime
 import json
 import sys
 
-wallet_address = '' #st.secrets['wallet_address']
-private_key = '' #st.secrets['private_key']
+wallet_address = '0x5340a3b2e8e05d6b083647fcb6ec93ee7b569c39' #st.secrets['wallet_address']
+private_key = '0x5340a3b2e8e05d6b083647fcb6ec93ee7b569c39' #st.secrets['private_key']
 
 #Get token balance
 def get_token_balance(web3, token_address: str, abi: list, wallet_address: str) -> float:
