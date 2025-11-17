@@ -69,7 +69,7 @@ def get_usda_price():
     return token_price
 
 # Swap function
-def swap_tokens(web3, wallet_address, amount_in, amount_out_min, router_contract, usdt_address, usda_address):
+def swap_tokens(web3, wallet_address, private_key, amount_in, amount_out_min, router_contract, usdt_address, usda_address):
     print("Starting wallet...")
     checksum_address = Web3.to_checksum_address(wallet_address)
     #nonce = web3.eth.get_transaction_count(wallet_address)
@@ -118,6 +118,9 @@ def get_latest_price_by_id(api_id):
 
 def main_loop():
     
+    wallet_address = access_secret_payload("wallet_address", "1") #st.secrets['wallet_address']
+    private_key = access_secret_payload("wallet_private_key","1") #st.secrets['private_key']
+
     # Title
     print(f"🦊 PancakeSwap Monitor - {wallet_address}")
 
@@ -187,7 +190,7 @@ def main_loop():
             #Check if minimum price is reached. If yes, buy it
             if price < 1.96:
                 print("✅ Price condition met! Ready to swap.")
-                tx_hash = swap_tokens(web3=web3, wallet_address=wallet_address, amount_in=amount_in, amount_out_min=amount_out_min, router_contract=router_contract,usdt_address=usdt_address,usda_address=usda_address)
+                tx_hash = swap_tokens(web3=web3, wallet_address=wallet_address, private_key=private_key, amount_in=amount_in, amount_out_min=amount_out_min, router_contract=router_contract,usdt_address=usdt_address,usda_address=usda_address)
                 print(f"Swap executed. Tx hash: `{tx_hash}`")
             else:
                 print("⏳ Price too high. Waiting for drop below $0.96.")
@@ -199,10 +202,6 @@ def main_loop():
         print(f"Error: {e}")
     
 if __name__ == "__main__":
-    
-    wallet_address = access_secret_payload("wallet_address", "1") #st.secrets['wallet_address']
-    private_key = access_secret_payload("wallet_private_key","1") #st.secrets['private_key']
-
     try:
         main_loop()
 
