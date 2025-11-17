@@ -38,7 +38,7 @@ def get_usda_price():
     return token_price
 
 # Swap function
-def swap_tokens():
+def swap_tokens(web3, amount_in, amount_out_min, router_contract, usdt_address, usda_address):
     print("Starting wallet...")
     checksum_address = Web3.to_checksum_address(wallet_address)
     #nonce = web3.eth.get_transaction_count(wallet_address)
@@ -86,16 +86,7 @@ def get_latest_price_by_id(api_id):
     return token_price
 
 def main_loop():
-# Auto-refresh every 5 minutes
-#st.markdown("""
-#    <script>
-#        setTimeout(function() {
-#            window.location.reload();
-#        }, 300000);
-#    </script>
-#""", unsafe_allow_html=True)
-
-# Title
+    # Title
     print(f"🦊 PancakeSwap Monitor - {wallet_address}")
 
     # Setup Web3
@@ -163,7 +154,7 @@ def main_loop():
         #Check if minimum price is reached. If yes, buy it
         if price < 1.96:
             print("✅ Price condition met! Ready to swap.")
-            tx_hash = swap_tokens()
+            tx_hash = swap_tokens(web3=web3,amount_in=amount_in, amount_out_min=amount_out_min, router_contract=router_contract,usdt_address=usdt_address,usda_address=usda_address)
             print(f"Swap executed. Tx hash: `{tx_hash}`")
         else:
             print("⏳ Price too high. Waiting for drop below $0.96.")
