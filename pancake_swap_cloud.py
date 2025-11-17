@@ -8,19 +8,19 @@ import datetime
 import json
 import sys
 
-wallet_address = '0x5340a3b2e8e05d6b083647fcb6ec93ee7b569c39' #st.secrets['wallet_address']
-private_key = '0x5340a3b2e8e05d6b083647fcb6ec93ee7b569c39' #st.secrets['private_key']
+wallet_address = ""
+private_key = ""
 
-def access_secret_payload():
+def access_secret_payload(secret_id, version):
     """Accesses the payload of the secret and returns it as a string."""
     
     # Your project ID and the name of the secret
     PROJECT_ID = "478915354588"
-    SECRET_ID = "CoinmarketCap_APIKey"
+    SECRET_ID = "secret_id" #"CoinmarketCap_APIKey"
 
     # The full resource name of the secret version.
     # Using 'latest' is okay for simplicity here, but use a specific version (e.g., :2) in production.
-    SECRET_VERSION_NAME = f"projects/{PROJECT_ID}/secrets/{SECRET_ID}/versions/1"
+    SECRET_VERSION_NAME = f"projects/{PROJECT_ID}/secrets/{SECRET_ID}/versions/{version}"
 
     # 1. Instantiate the Secret Manager client.
     # The client automatically handles authentication using the Service Account
@@ -69,7 +69,7 @@ def get_usda_price():
     return token_price
 
 # Swap function
-def swap_tokens(web3, amount_in, amount_out_min, router_contract, usdt_address, usda_address):
+def swap_tokens(web3, wallet_address, amount_in, amount_out_min, router_contract, usdt_address, usda_address):
     print("Starting wallet...")
     checksum_address = Web3.to_checksum_address(wallet_address)
     #nonce = web3.eth.get_transaction_count(wallet_address)
@@ -95,7 +95,7 @@ def swap_tokens(web3, amount_in, amount_out_min, router_contract, usdt_address, 
 
 def get_latest_price_by_id(api_id):
     url = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest"
-    api_key = access_secret_payload() #st.secrets["COINMARKET_API_KEY"]# Replace with your actual API key
+    api_key = access_secret_payload("CoinmarketCap_APIKey") #st.secrets["COINMARKET_API_KEY"]# Replace with your actual API key
 
     headers = {
         "X-CMC_PRO_API_KEY": api_key,
@@ -117,6 +117,7 @@ def get_latest_price_by_id(api_id):
     return token_price
 
 def main_loop():
+    
     # Title
     print(f"🦊 PancakeSwap Monitor - {wallet_address}")
 
@@ -178,26 +179,33 @@ def main_loop():
 
     # UI
     try:
-        print("Request USDA price...")
-        price = get_usda_price()
-        print("Current USDA Price", f"${price:.4f}")
+        while True:
+            print("Request USDA price...")
+            price = get_usda_price()
+            print("Current USDA Price", f"${price:.4f}")
 
-        #Check if minimum price is reached. If yes, buy it
-        if price < 1.96:
-            print("✅ Price condition met! Ready to swap.")
-            tx_hash = swap_tokens(web3=web3,amount_in=amount_in, amount_out_min=amount_out_min, router_contract=router_contract,usdt_address=usdt_address,usda_address=usda_address)
-            print(f"Swap executed. Tx hash: `{tx_hash}`")
-        else:
-            print("⏳ Price too high. Waiting for drop below $0.96.")
+            #Check if minimum price is reached. If yes, buy it
+            if price < 1.96:
+                print("✅ Price condition met! Ready to swap.")
+                tx_hash = swap_tokens(web3=web3, wallet_address=wallet_address, amount_in=amount_in, amount_out_min=amount_out_min, router_contract=router_contract,usdt_address=usdt_address,usda_address=usda_address)
+                print(f"Swap executed. Tx hash: `{tx_hash}`")
+            else:
+                print("⏳ Price too high. Waiting for drop below $0.96.")
+            
+            # Sleep for a period
+            time.sleep(60) # Sleeps for 60 seconds (1 minute)
+
     except Exception as e:
         print(f"Error: {e}")
     
 if __name__ == "__main__":
+    
+    wallet_address = access_secret_payload("wallet_address", "1") #st.secrets['wallet_address']
+    private_key = access_secret_payload("wallet_private_key","1") #st.secrets['private_key']
+
     try:
-        while True:
-            main_loop()
-            # Sleep for a period
-            time.sleep(60) # Sleeps for 60 seconds (1 minute)
+        main_loop()
+
     except KeyboardInterrupt:
         print("Worker shutting down...")
         sys.exit(0)
