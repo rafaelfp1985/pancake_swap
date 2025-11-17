@@ -11,7 +11,7 @@ wallet_address = '' #st.secrets['wallet_address']
 private_key = '' #st.secrets['private_key']
 
 #Get token balance
-def get_token_balance(token_address: str, abi: list, wallet_address: str) -> float:
+def get_token_balance(web3, token_address: str, abi: list, wallet_address: str) -> float:
     # Create contract object
     token_address = web3.to_checksum_address(token_address)
     wallet_address = web3.to_checksum_address(wallet_address)
@@ -140,9 +140,9 @@ def main_loop():
     bnb_balance = web3.eth.get_balance(Web3.to_checksum_address(wallet_address))
     bnb_balance = web3.from_wei(bnb_balance, 'ether')
     print("BNB balance", f"{bnb_balance:.6f}")
-    usdt_balance = get_token_balance(usdt_address, token_abi, wallet_address)
+    usdt_balance = get_token_balance(web3, usdt_address, token_abi, wallet_address)
     print("USDT balance", f"${usdt_balance:.4f}")
-    usda_balance = get_token_balance(usda_address, token_abi, wallet_address)
+    usda_balance = get_token_balance(web3, usda_address, token_abi, wallet_address)
     print("USDA balance", f"${usda_balance:.4f}")
 
     # UI
