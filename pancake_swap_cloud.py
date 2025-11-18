@@ -178,6 +178,7 @@ def main_loop():
     #amount_out_min = ( amount_in / target_price ) * (1 - slippage_tolerance)
     amount_out_min = calculate_target_amount(amount_in, target_price, slippage_tolerance)
     print(f"Amount to buy: {lot_size:.2f} USDT")
+    print(f"Amount in: {amount_in:.4f} USDT")
     print(f"Expected USDA quantity: {amount_out_min:.4f}")
 
     #Checking Tokens balance
@@ -198,7 +199,8 @@ def main_loop():
             print("Current USDA Price", f"${price:.4f}")
 
             #Check if minimum price is reached. If yes, buy it
-            if price < 1.96:
+            if price < 1.96: #This is only for test
+            #if price < target_price:
                 print("✅ Price condition met! Ready to swap.")
                 tx_hash = swap_tokens(web3=web3, wallet_address=wallet_address, private_key=private_key, amount_in=amount_in, amount_out_min=amount_out_min, router_contract=router_contract,usdt_address=usdt_address,usda_address=usda_address)
                 print(f"Swap executed. Tx hash: `{tx_hash}`")
