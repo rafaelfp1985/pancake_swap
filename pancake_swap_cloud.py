@@ -171,7 +171,7 @@ def main_loop():
 
     # Parameters
     print("Setting up parameters...")
-    target_price = 0.9700
+    target_price = 0.9800
     lot_size = 10 #Amount of USDT to spend
     amount_in = lot_size * 10**18            #web3.to_wei(100, 'ether')
     slippage_tolerance = 0.005          # 0.5%
@@ -201,8 +201,8 @@ def main_loop():
             print("Current USDA Price", f"${price:.4f}")
 
             #Check if minimum price is reached. If yes, buy it
-            if price < 1.96: #This is only for test
-            #if price < target_price:
+            #if price < 1.96: #This is only for test
+            if price < target_price:
                 print("✅ Price condition met! Ready to swap.")
                 tx_hash = swap_tokens(web3=web3, wallet_address=wallet_address, private_key=private_key, amount_in=int(amount_in), amount_out_min=int(amount_out_min), router_contract=router_contract,usdt_address=usdt_address,usda_address=usda_address)
                 print(f"Swap executed. Tx hash: `{tx_hash}`")
