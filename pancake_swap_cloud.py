@@ -116,10 +116,17 @@ def get_latest_price_by_id(api_id):
 
     return token_price
 
+def calculate_target_amount(amount_in, target_price, slippage_tolerance):
+    
+    if target_price >= 0:
+        target_amount = ( amount_in / target_price ) * (1 - slippage_tolerance)
+
+    return target_amount
+
 def main_loop():
     
-    wallet_address = access_secret_payload("wallet_address", "1") #st.secrets['wallet_address']
-    private_key = access_secret_payload("wallet_private_key","1") #st.secrets['private_key']
+    wallet_address = access_secret_payload("wallet_address", "2") #st.secrets['wallet_address']
+    private_key = access_secret_payload("wallet_private_key","2") #st.secrets['private_key']
 
     # Title
     print(f"🦊 PancakeSwap Monitor - {wallet_address}")
@@ -129,9 +136,6 @@ def main_loop():
     print("🕒 Timestamp: ", datetime.datetime.now().strftime("%d.%m.%Y %H:%M:%S"))
     web3 = Web3(Web3.HTTPProvider('https://bsc-dataseed.binance.org/'))
     web3.middleware_onion.inject(geth_poa_middleware, layer=0)
-
-    #st.write(wallet_address)
-    #st.write(private_key)
 
     # Load ABI
     print("Loading ABI file...")
@@ -167,11 +171,17 @@ def main_loop():
 
     # Parameters
     print("Setting up parameters...")
-    amount_in = 100 * 10**18            #web3.to_wei(100, 'ether')
+    target_price = 0.9700
+    lot_size = 10 #Amount of USDT to spend
+    amount_in = lot_size * 10**18            #web3.to_wei(100, 'ether')
     slippage_tolerance = 0.005          # 0.5%
-    amount_out_min = int(amount_in * (1 - slippage_tolerance))
+    #amount_out_min = ( amount_in / target_price ) * (1 - slippage_tolerance)
+    amount_out_min = calculate_target_amount(amount_in, target_price, slippage_tolerance)
+    print(f"Amount to buy: {lot_size:.2f} USDT")
+    print(f"Expected USDA quantity: {amount_out_min:.4f}")
 
     #Checking Tokens balance
+    print("Checking Wallet balances...")
     bnb_balance = web3.eth.get_balance(Web3.to_checksum_address(wallet_address))
     bnb_balance = web3.from_wei(bnb_balance, 'ether')
     print("BNB balance", f"{bnb_balance:.6f}")
@@ -193,7 +203,7 @@ def main_loop():
                 tx_hash = swap_tokens(web3=web3, wallet_address=wallet_address, private_key=private_key, amount_in=amount_in, amount_out_min=amount_out_min, router_contract=router_contract,usdt_address=usdt_address,usda_address=usda_address)
                 print(f"Swap executed. Tx hash: `{tx_hash}`")
             else:
-                print("⏳ Price too high. Waiting for drop below $0.96.")
+                print(f"⏳ Price too high. Waiting for drop below ${target_price:.4f}.")
             
             # Sleep for a period
             time.sleep(300) # Sleeps for 300 seconds (5 minute)
