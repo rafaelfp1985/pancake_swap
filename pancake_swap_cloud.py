@@ -131,6 +131,9 @@ def main_loop():
     # Title
     print(f"🦊 PancakeSwap Monitor - {wallet_address}")
 
+    #Version (for control in the Cloud)
+    print("Version 1.0.1")
+
     # Setup Web3
     print("Starting Web3 Component...")
     print("🕒 Timestamp: ", datetime.datetime.now().strftime("%d.%m.%Y %H:%M:%S"))
