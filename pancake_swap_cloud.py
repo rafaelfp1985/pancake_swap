@@ -210,7 +210,7 @@ def main_loop():
                 print(f"⏳ Price too high. Waiting for drop below ${target_price:.4f}.")
             
             # Sleep for a period
-            time.sleep(300) # Sleeps for 300 seconds (5 minute)
+            time.sleep(900) # Sleeps for 900 seconds (15 minute)
 
     except Exception as e:
         print(f"Error: {e}")
