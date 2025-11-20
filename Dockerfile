@@ -13,8 +13,8 @@ RUN pip install -r requirements.txt
 COPY pancake_swap_cloud.py .
 
 # Copy other files that are needed
-COPY abi.json .
-COPY erc_20_abi.json .
+COPY pancake_abi.json .
+COPY erc20_abi.json .
 
 # Command to run your script when the container starts
 # The '-u' flag is important to unbuffer stdout/stderr in Python
