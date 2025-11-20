@@ -16,7 +16,7 @@ def access_secret_payload(secret_id, version):
     
     # Your project ID and the name of the secret
     PROJECT_ID = "478915354588"
-    SECRET_ID = secret_id #"CoinmarketCap_APIKey"
+    SECRET_ID = secret_id 
 
     # The full resource name of the secret version.
     # Using 'latest' is okay for simplicity here, but use a specific version (e.g., :2) in production.
@@ -68,17 +68,60 @@ def get_usda_price():
     token_price = get_latest_price_by_id(37721)
     return token_price
 
+# Approve token
+def check_and_approve_token_allowance(web3, wallet_address, private_key, amount_allowed, router_address, token_contract):
+    #############################
+    #This is not tested....
+    #############################
+    print("Approving token for swap...")
+    checksum_address = Web3.to_checksum_address(wallet_address)
+
+    target_allowance = Web3.to_wei(amount_allowed, 'ether') #(10 ** decimals)
+    current_allowance = token_contract.functions.allowance(checksum_address, router_address).call()
+
+    if current_allowance < target_allowance:
+        print("Allowance too low, sending approve transaction...")
+        txn = token_contract.functions.approve(
+            router_address,
+            target_allowance
+        ).build_transaction({
+            'from': checksum_address,
+            'nonce': web3.eth.get_transaction_count(checksum_address),
+            'gas': 100000,
+            'gasPrice': web3.to_wei(5, 'gwei')
+        })
+
+        print("Getting TX for approval...")
+        signed_txn = web3.eth.account.sign_transaction(txn, private_key)
+        tx_hash = web3.eth.send_raw_transaction(signed_txn.rawTransaction)
+        print("Token approval TX:", tx_hash)
+    else:
+        tx_hash = 0
+        print(f"Already approved for at least {amount_allowed}. Current allowance: {Web3.from_wei(current_allowance,'ether'):.4f}")
+
+    return web3.to_hex(tx_hash)
+
 # Swap function
 def swap_tokens(web3, wallet_address, private_key, amount_in, amount_out_min, router_contract, usdt_address, usda_address):
+    
     print("Starting wallet...")
     checksum_address = Web3.to_checksum_address(wallet_address)
     #nonce = web3.eth.get_transaction_count(wallet_address)
     nonce = web3.eth.get_transaction_count(checksum_address)
     print("Start swapping...")
+    
+    #Convert from human number to uint256
+    uint_amount_in = int( amount_in * 10**18 )
+    #Lets trust the price and just swap it without minimum price. 
+    #Backgroung is: minimum amount is really hard to get because of difference between the price oracle and the DEX
+    #Just start the transaction and hope for the best...
+    uint_amount_out_min = int( amount_in * 10**18 )
+
     deadline = int(time.time()) + 60 * 20
-    tx = router_contract.functions.swapExactTokensForTokens(
-        amount_in,
-        amount_out_min,
+    #tx = router_contract.functions.swapExactTokensForTokens(
+    tx = router_contract.functions.swapExactTokensForTokensSupportingFeeOnTransferTokens(
+        uint_amount_in,
+        uint_amount_out_min,
         [usdt_address, usda_address],
         checksum_address,
         deadline
@@ -118,6 +161,7 @@ def get_latest_price_by_id(api_id):
 
 def calculate_target_amount(amount_in, target_price, slippage_tolerance):
     
+    target_amount = 0
     if target_price >= 0:
         target_amount = ( amount_in / target_price ) * (1 - slippage_tolerance)
 
@@ -142,49 +186,47 @@ def main_loop():
 
     # Load ABI
     print("Loading ABI file...")
-    with open('abi.json', 'r') as abi_file:
+    with open('pancake_abi.json', 'r') as abi_file:
         router_abi = json.load(abi_file)
-    token_abi = [
-        {
-            "constant": True,
-            "inputs": [{"name": "_owner", "type": "address"}],
-            "name": "balanceOf",
-            "outputs": [{"name": "balance", "type": "uint256"}],
-            "type": "function",
-        },
-        {
-            "constant": True,
-            "inputs": [],
-            "name": "decimals",
-            "outputs": [{"name": "", "type": "uint8"}],
-            "type": "function",
-        },
-    ]
+    with open('erc20_abi.json', 'r') as abi_file:
+        token_abi = json.load(abi_file)
+    #token_abi = [
+    #    {
+    #        "constant": True,
+    #        "inputs": [{"name": "_owner", "type": "address"}],
+    #        "name": "balanceOf",
+    #        "outputs": [{"name": "balance", "type": "uint256"}],
+    #        "type": "function",
+    #    },
+    #    {
+    #        "constant": True,
+    #        "inputs": [],
+    #        "name": "decimals",
+    #        "outputs": [{"name": "", "type": "uint8"}],
+    #        "type": "function",
+    #    },
+    #]
 
 
     # Contract setup
     print("Setting up contracts...")
-    router_address = Web3.to_checksum_address('0x10ED43C718714eb63d5aA57B78B54704E256024E')
+    router_address = Web3.to_checksum_address('0x10ED43C718714eb63d5aA57B78B54704E256024E') #Pancakeswap router
     router_contract = web3.eth.contract(address=router_address, abi=router_abi)
 
     # Tokens
     print("Setting up Tokens...")
     usdt_address = Web3.to_checksum_address('0x55d398326f99059fF775485246999027B3197955')
+    usdt_contract = web3.eth.contract(address=usdt_address, abi=token_abi)
     usda_address = Web3.to_checksum_address('0x17EAfd08994305D8AcE37EfB82F1523177eC70EE')
 
     # Parameters
     print("Setting up parameters...")
     target_price = 0.9800
-    lot_size = 10 #Amount of USDT to spend
-    amount_in = lot_size * 10**18            #web3.to_wei(100, 'ether')
+    amount_in = 10           #web3.to_wei(100, 'ether')
     slippage_tolerance = 0.005          # 0.5%
-    #amount_out_min = ( amount_in / target_price ) * (1 - slippage_tolerance)
     amount_out_min = calculate_target_amount(amount_in, target_price, slippage_tolerance)
-    print(f"Amount to buy: {lot_size:.2f} USDT")
-    print(f"Amount in: {amount_in:.4f} USDT")
-    print(f"Amount in INT: {int(amount_in)} USDT")
+    print(f"Amount to buy: {amount_in:.2f} USDT")
     print(f"Expected USDA quantity: {amount_out_min:.4f}")
-    print(f"Expected USDA quantity INT: {int(amount_out_min)}")
 
     #Checking Tokens balance
     print("Checking Wallet balances...")
@@ -195,6 +237,11 @@ def main_loop():
     print("USDT balance", f"${usdt_balance:.4f}")
     usda_balance = get_token_balance(web3, usda_address, token_abi, wallet_address)
     print("USDA balance", f"${usda_balance:.4f}")
+
+    #Check if token needs to be approved
+    #To be tested...
+    #amount_allowed = 1000
+    # check_and_approve_token_allowance(web3, wallet_address, private_key, amount_allowed, router_address, usdt_contract)
 
     # UI
     try:
@@ -207,7 +254,8 @@ def main_loop():
             #if price < 1.96: #This is only for test
             if price < target_price:
                 print("✅ Price condition met! Ready to swap.")
-                tx_hash = swap_tokens(web3=web3, wallet_address=wallet_address, private_key=private_key, amount_in=int(amount_in), amount_out_min=int(amount_out_min), router_contract=router_contract,usdt_address=usdt_address,usda_address=usda_address)
+                #Provide human readable numbers here. The convertion to uint will happen inside the swap transaction
+                tx_hash = swap_tokens(web3=web3, wallet_address=wallet_address, private_key=private_key, amount_in=amount_in, amount_out_min=amount_out_min, router_contract=router_contract,usdt_address=usdt_address,usda_address=usda_address)
                 print(f"Swap executed. Tx hash: `{tx_hash}`")
             else:
                 print(f"⏳ Price too high. Waiting for drop below ${target_price:.4f}.")
