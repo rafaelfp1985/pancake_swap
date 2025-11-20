@@ -10,6 +10,7 @@ import sys
 
 wallet_address = ""
 private_key = ""
+price_oracle_api_key = ""
 
 def access_secret_payload(secret_id, version):
     """Accesses the payload of the secret and returns it as a string."""
@@ -59,12 +60,7 @@ def get_token_balance(web3, token_address: str, abi: list, wallet_address: str) 
 # Price fetcher
 def get_usda_price():
     print("Looking for the USDA price...")
-    #Pancakeswap API doesn't work. Let's move to Coinmarketcap API
-    #url = f'https://api.pancakeswap.info/api/v2/tokens/{usda_address}'
-    #st.write(f'Calling URL: {url}')
-    #response = requests.get(url)
-    #data = response.json()
-    #return float(data['data']['price'])
+    #Use Coinmarketcap API
     token_price = get_latest_price_by_id(37721)
     return token_price
 
@@ -81,12 +77,13 @@ def check_and_approve_token_allowance(web3, wallet_address, private_key, amount_
 
     if current_allowance < target_allowance:
         print("Allowance too low, sending approve transaction...")
+        nonce = web3.eth.get_transaction_count(checksum_address, 'pending')
         txn = token_contract.functions.approve(
             router_address,
             target_allowance
         ).build_transaction({
             'from': checksum_address,
-            'nonce': web3.eth.get_transaction_count(checksum_address),
+            'nonce': nonce,
             'gas': 100000,
             'gasPrice': web3.to_wei(5, 'gwei')
         })
@@ -97,14 +94,13 @@ def check_and_approve_token_allowance(web3, wallet_address, private_key, amount_
         print("Token approval TX:", tx_hash)
     else:
         tx_hash = 0
-        print(f"Already approved for at least {amount_allowed}. Current allowance: {Web3.from_wei(current_allowance,'ether'):.4f}")
+        print(f"Already approved for at least {amount_allowed}. Current allowance: {Web3.from_wei(current_allowance,'ether'):.2f}")
 
-    return web3.to_hex(tx_hash)
+    return tx_hash
 
 # Swap function
-def swap_tokens(web3, wallet_address, private_key, amount_in, amount_out_min, router_contract, usdt_address, usda_address):
+def swap_tokens(web3, wallet_address, private_key, amount_in, amount_out_min, router_contract, source_token_address, destination_token_address):
     
-    print("Starting wallet...")
     checksum_address = Web3.to_checksum_address(wallet_address)
     #nonce = web3.eth.get_transaction_count(wallet_address)
     nonce = web3.eth.get_transaction_count(checksum_address)
@@ -122,7 +118,7 @@ def swap_tokens(web3, wallet_address, private_key, amount_in, amount_out_min, ro
     tx = router_contract.functions.swapExactTokensForTokensSupportingFeeOnTransferTokens(
         uint_amount_in,
         uint_amount_out_min,
-        [usdt_address, usda_address],
+        [source_token_address, destination_token_address],
         checksum_address,
         deadline
     ).build_transaction({
@@ -138,7 +134,12 @@ def swap_tokens(web3, wallet_address, private_key, amount_in, amount_out_min, ro
 
 def get_latest_price_by_id(api_id):
     url = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest"
-    api_key = access_secret_payload("CoinmarketCap_APIKey","1") #st.secrets["COINMARKET_API_KEY"]# Replace with your actual API key
+
+    #Possibility to use global variable. Make easier for testing on different environment.
+    if price_oracle_api_key == '':
+        api_key = access_secret_payload("CoinmarketCap_APIKey","1") #st.secrets["COINMARKET_API_KEY"]# Replace with your actual API key
+    else:
+        api_key = price_oracle_api_key
 
     headers = {
         "X-CMC_PRO_API_KEY": api_key,
@@ -169,14 +170,18 @@ def calculate_target_amount(amount_in, target_price, slippage_tolerance):
 
 def main_loop():
     
-    wallet_address = access_secret_payload("wallet_address", "2") #st.secrets['wallet_address']
-    private_key = access_secret_payload("wallet_private_key","2") #st.secrets['private_key']
+    #Possibility to use global variable. Make easier for testing on different environment.
+    global wallet_address, private_key
+    if wallet_address == '':
+        wallet_address = access_secret_payload("wallet_address", "2") #st.secrets['wallet_address']
+    if private_key == '':
+        private_key = access_secret_payload("wallet_private_key","2") #st.secrets['private_key']
 
     # Title
     print(f"🦊 PancakeSwap Monitor - {wallet_address}")
 
     #Version (for control in the Cloud)
-    print("Version 1.0.1")
+    print("Version 1.0.2")
 
     # Setup Web3
     print("Starting Web3 Component...")
@@ -218,48 +223,80 @@ def main_loop():
     usdt_address = Web3.to_checksum_address('0x55d398326f99059fF775485246999027B3197955')
     usdt_contract = web3.eth.contract(address=usdt_address, abi=token_abi)
     usda_address = Web3.to_checksum_address('0x17EAfd08994305D8AcE37EfB82F1523177eC70EE')
+    usda_contract = web3.eth.contract(address=usda_address, abi=token_abi)
 
     # Parameters
     print("Setting up parameters...")
-    target_price = 0.9800
+    target_price_buy = 0.9800
+    target_price_sell = 0.9960
     amount_in = 10           #web3.to_wei(100, 'ether')
     slippage_tolerance = 0.005          # 0.5%
-    amount_out_min = calculate_target_amount(amount_in, target_price, slippage_tolerance)
+    amount_out_min = calculate_target_amount(amount_in, target_price_buy, slippage_tolerance)
     print(f"Amount to buy: {amount_in:.2f} USDT")
-    print(f"Expected USDA quantity: {amount_out_min:.4f}")
+    #print(f"Expected USDA quantity: {amount_out_min:.4f}")
 
-    #Checking Tokens balance
-    print("Checking Wallet balances...")
-    bnb_balance = web3.eth.get_balance(Web3.to_checksum_address(wallet_address))
-    bnb_balance = web3.from_wei(bnb_balance, 'ether')
-    print("BNB balance", f"{bnb_balance:.6f}")
-    usdt_balance = get_token_balance(web3, usdt_address, token_abi, wallet_address)
-    print("USDT balance", f"${usdt_balance:.4f}")
-    usda_balance = get_token_balance(web3, usda_address, token_abi, wallet_address)
-    print("USDA balance", f"${usda_balance:.4f}")
-
-    #Check if token needs to be approved
-    #To be tested...
-    #amount_allowed = 1000
-    # check_and_approve_token_allowance(web3, wallet_address, private_key, amount_allowed, router_address, usdt_contract)
+    #Check if token quantity needs to be approved
+    amount_allowed = 1000
+    print(f"Checking if USDT is approved...")
+    check_and_approve_token_allowance(web3, wallet_address, private_key, amount_allowed, router_address, usdt_contract)
+    print(f"Checking if USDA is approved...")
+    check_and_approve_token_allowance(web3, wallet_address, private_key, amount_allowed, router_address, usda_contract)
 
     # UI
     try:
         while True:
+            #Checking Tokens balance
+            print("Checking Wallet balances...")
+            bnb_balance = web3.eth.get_balance(Web3.to_checksum_address(wallet_address))
+            bnb_balance = web3.from_wei(bnb_balance, 'ether')
+            print("BNB balance", f"{bnb_balance:.6f}")
+            usdt_balance = get_token_balance(web3, usdt_address, token_abi, wallet_address)
+            print("USDT balance", f"${usdt_balance:.4f}")
+            usda_balance = get_token_balance(web3, usda_address, token_abi, wallet_address)
+            print("USDA balance", f"${usda_balance:.4f}")
+
             print("Request USDA price...")
-            price = get_usda_price()
-            print("Current USDA Price", f"${price:.4f}")
+            usda_price = get_usda_price()
+            print("Current USDA Price", f"${usda_price:.4f}")
 
             #Check if minimum price is reached. If yes, buy it
             #if price < 1.96: #This is only for test
-            if price < target_price:
-                print("✅ Price condition met! Ready to swap.")
-                #Provide human readable numbers here. The convertion to uint will happen inside the swap transaction
-                tx_hash = swap_tokens(web3=web3, wallet_address=wallet_address, private_key=private_key, amount_in=amount_in, amount_out_min=amount_out_min, router_contract=router_contract,usdt_address=usdt_address,usda_address=usda_address)
-                print(f"Swap executed. Tx hash: `{tx_hash}`")
+            #Price reach. Spend USDT
+            if usda_price < target_price_buy:
+                if usdt_balance > amount_in:
+                    print("🤑 Buying price condition met! Ready to swap.")
+                    #Provide human readable numbers here. The convertion to uint will happen inside the swap transaction
+                    tx_hash = swap_tokens(web3=web3, wallet_address=wallet_address, private_key=private_key, amount_in=amount_in, amount_out_min=amount_out_min, router_contract=router_contract,source_token_address=usdt_address,destination_token_address=usda_address)
+                    print(f"Swap executed. Tx hash: `{tx_hash}`")
+                    # Wait for the transaction receipt
+                    receipt = web3.eth.wait_for_transaction_receipt(tx_hash)
+                    # Check status
+                    if receipt["status"] == 1:
+                        print("✅ Transaction succeeded!")
+                    else:
+                        print("❌ Transaction failed.")
+                else: #Not enough money
+                    print("❌ Not enough USDT to buy!")
             else:
-                print(f"⏳ Price too high. Waiting for drop below ${target_price:.4f}.")
+                print(f"⏳ Price too high. Waiting for drop below ${target_price_buy:.4f}.")
             
+            #If if price to sell is reached
+            #Price reach. Spend USDA
+            if usda_price > target_price_sell:
+                if usda_balance > amount_in:
+                    print("🤑 Selling price condition met! Ready to swap.")
+                    tx_hash = swap_tokens(web3=web3, wallet_address=wallet_address, private_key=private_key, amount_in=amount_in, amount_out_min=amount_out_min, router_contract=router_contract,source_token_address=usda_address,destination_token_address=usdt_address)
+                    print(f"Swap executed. Tx hash: `{tx_hash}`")
+                    # Wait for the transaction receipt
+                    receipt = web3.eth.wait_for_transaction_receipt(tx_hash)
+                    # Check status
+                    if receipt["status"] == 1:
+                        print("✅ Transaction succeeded!")
+                    else:
+                        print("❌ Transaction failed.")
+                else:
+                    print("❌ Not enough USDA to sell!")
+
             # Sleep for a period
             time.sleep(900) # Sleeps for 900 seconds (15 minute)
 
