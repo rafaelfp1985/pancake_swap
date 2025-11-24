@@ -244,61 +244,63 @@ def main_loop():
 
     # UI
     try:
-        while True:
-            #Checking Tokens balance
-            print("Checking Wallet balances...")
-            bnb_balance = web3.eth.get_balance(Web3.to_checksum_address(wallet_address))
-            bnb_balance = web3.from_wei(bnb_balance, 'ether')
-            print("BNB balance", f"{bnb_balance:.6f}")
-            usdt_balance = get_token_balance(web3, usdt_address, token_abi, wallet_address)
-            print("USDT balance", f"${usdt_balance:.4f}")
-            usda_balance = get_token_balance(web3, usda_address, token_abi, wallet_address)
-            print("USDA balance", f"${usda_balance:.4f}")
+        #while True:
+        #Checking Tokens balance
+        print("Checking Wallet balances...")
+        bnb_balance = web3.eth.get_balance(Web3.to_checksum_address(wallet_address))
+        bnb_balance = web3.from_wei(bnb_balance, 'ether')
+        print("BNB balance", f"{bnb_balance:.6f}")
+        usdt_balance = get_token_balance(web3, usdt_address, token_abi, wallet_address)
+        print("USDT balance", f"${usdt_balance:.4f}")
+        usda_balance = get_token_balance(web3, usda_address, token_abi, wallet_address)
+        print("USDA balance", f"${usda_balance:.4f}")
 
-            print("Request USDA price...")
-            usda_price = get_usda_price()
-            print("Current USDA Price", f"${usda_price:.4f}")
+        print("Request USDA price...")
+        usda_price = get_usda_price()
+        print("Current USDA Price", f"${usda_price:.4f}")
 
-            #Check if minimum price is reached. If yes, buy it
-            #if price < 1.96: #This is only for test
-            #Price reach. Spend USDT
-            if usda_price < target_price_buy:
-                if usdt_balance > amount_in:
-                    print("🤑 Buying price condition met! Ready to swap.")
-                    #Provide human readable numbers here. The convertion to uint will happen inside the swap transaction
-                    tx_hash = swap_tokens(web3=web3, wallet_address=wallet_address, private_key=private_key, amount_in=amount_in, amount_out_min=amount_out_min, router_contract=router_contract,source_token_address=usdt_address,destination_token_address=usda_address)
-                    print(f"Swap executed. Tx hash: `{tx_hash}`")
-                    # Wait for the transaction receipt
-                    receipt = web3.eth.wait_for_transaction_receipt(tx_hash)
-                    # Check status
-                    if receipt["status"] == 1:
-                        print("✅ Transaction succeeded!")
-                    else:
-                        print("❌ Transaction failed.")
-                else: #Not enough money
-                    print("❌ Not enough USDT to buy!")
-            else:
-                print(f"⏳ Price too high. Waiting for drop below ${target_price_buy:.4f}.")
-            
-            #If if price to sell is reached
-            #Price reach. Spend USDA
-            if usda_price > target_price_sell:
-                if usda_balance > amount_in:
-                    print("🤑 Selling price condition met! Ready to swap.")
-                    tx_hash = swap_tokens(web3=web3, wallet_address=wallet_address, private_key=private_key, amount_in=amount_in, amount_out_min=amount_out_min, router_contract=router_contract,source_token_address=usda_address,destination_token_address=usdt_address)
-                    print(f"Swap executed. Tx hash: `{tx_hash}`")
-                    # Wait for the transaction receipt
-                    receipt = web3.eth.wait_for_transaction_receipt(tx_hash)
-                    # Check status
-                    if receipt["status"] == 1:
-                        print("✅ Transaction succeeded!")
-                    else:
-                        print("❌ Transaction failed.")
+        #Check if minimum price is reached. If yes, buy it
+        #if price < 1.96: #This is only for test
+        #Price reach. Spend USDT
+        if usda_price < target_price_buy:
+            if usdt_balance > amount_in:
+                print("🤑 Buying price condition met! Ready to swap.")
+                #Provide human readable numbers here. The convertion to uint will happen inside the swap transaction
+                tx_hash = swap_tokens(web3=web3, wallet_address=wallet_address, private_key=private_key, amount_in=amount_in, amount_out_min=amount_out_min, router_contract=router_contract,source_token_address=usdt_address,destination_token_address=usda_address)
+                print(f"Swap executed. Tx hash: `{tx_hash}`")
+                # Wait for the transaction receipt
+                receipt = web3.eth.wait_for_transaction_receipt(tx_hash)
+                # Check status
+                if receipt["status"] == 1:
+                    print("✅ Transaction succeeded!")
                 else:
-                    print("❌ Not enough USDA to sell!")
+                    print("❌ Transaction failed.")
+            else: #Not enough money
+                print("❌ Not enough USDT to buy!")
+        else:
+            print(f"⏳ Price too high. Waiting for drop below ${target_price_buy:.4f}.")
+        
+        #If if price to sell is reached
+        #Price reach. Spend USDA
+        if usda_price > target_price_sell:
+            if usda_balance > amount_in:
+                #For USDA, the amount_out needs to be adjusted, as it will be less, depending on the price
+                amount_out_min = amount_in * target_price_sell
+                print("🤑 Selling price condition met! Ready to swap.")
+                tx_hash = swap_tokens(web3=web3, wallet_address=wallet_address, private_key=private_key, amount_in=amount_in, amount_out_min=amount_out_min, router_contract=router_contract,source_token_address=usda_address,destination_token_address=usdt_address)
+                print(f"Swap executed. Tx hash: `{tx_hash}`")
+                # Wait for the transaction receipt
+                receipt = web3.eth.wait_for_transaction_receipt(tx_hash)
+                # Check status
+                if receipt["status"] == 1:
+                    print("✅ Transaction succeeded!")
+                else:
+                    print("❌ Transaction failed.")
+            else:
+                print("❌ Not enough USDA to sell!")
 
             # Sleep for a period
-            time.sleep(900) # Sleeps for 900 seconds (15 minute)
+            #time.sleep(900) # Sleeps for 900 seconds (15 minute)
 
     except Exception as e:
         print(f"Error: {e}")
