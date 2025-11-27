@@ -154,6 +154,7 @@ def bitquery_get_latest_price_by_USDT():
               Currency: {SmartContract: {is: "0x17EAfd08994305D8AcE37EfB82F1523177eC70EE"}}
               Side: {Currency: {SmartContract: {is: "0x55d398326f99059ff775485246999027b3197955"}}}
               Price: {gt: 0}
+              Dex: {ProtocolName: {in: ["pancake_swap_v3", "pancake_swap_v2"]}}
             }
           }
         ) {
