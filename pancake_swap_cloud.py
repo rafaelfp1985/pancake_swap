@@ -59,16 +59,15 @@ def get_token_balance(web3, token_address: str, abi: list, wallet_address: str) 
     
 # Price fetcher
 def get_usda_price():
-    print("Looking for the USDA price...")
+    #print("Looking for the USDA price...")
     #Use Coinmarketcap API
-    token_price = get_latest_price_by_id(37721)
+    #token_price = coinmarketcap_get_latest_price_by_id(37721)
+    #Use Bitquery API. The prices here are closed to the ones on Pancakewap
+    token_price = bitquery_get_latest_price_by_USDT()
     return token_price
 
 # Approve token
 def check_and_approve_token_allowance(web3, wallet_address, private_key, amount_allowed, router_address, token_contract):
-    #############################
-    #This is not tested....
-    #############################
     print("Approving token for swap...")
     checksum_address = Web3.to_checksum_address(wallet_address)
 
@@ -132,7 +131,114 @@ def swap_tokens(web3, wallet_address, private_key, amount_in, amount_out_min, ro
     tx_hash = web3.eth.send_raw_transaction(signed_tx.rawTransaction)
     return web3.to_hex(tx_hash)
 
-def get_latest_price_by_id(api_id):
+def bitquery_get_latest_price_by_USDT():
+    # API endpoint
+    url = "https://streaming.bitquery.io/graphql"
+    
+    # Headers with your access token
+    api_key = access_secret_payload("Bitquery_APIKey","1") 
+    headers = {
+        'Content-Type': 'application/json',
+        'Authorization': f"Bearer {api_key}"  # Replace with your actual token
+    }
+    
+    # GraphQL query
+    query = """
+    query LatestTokenPrice {
+      EVM(network: bsc) {
+        DEXTradeByTokens(
+          orderBy: {descending: Block_Time}
+          limit: {count: 1}
+          where: {
+            Trade: {
+              Currency: {SmartContract: {is: "0x17EAfd08994305D8AcE37EfB82F1523177eC70EE"}}
+              Side: {Currency: {SmartContract: {is: "0x55d398326f99059ff775485246999027b3197955"}}}
+              Price: {gt: 0}
+            }
+          }
+        ) {
+          Block {
+            Number
+            Time
+          }
+          Trade {
+            Currency {
+              Symbol
+              Name
+              SmartContract
+            }
+            Price
+            PriceInUSD
+            Amount
+            Side {
+              Currency {
+                Symbol
+                Name
+                SmartContract
+              }
+              Amount
+            }
+            Dex {
+              ProtocolName
+              ProtocolFamily
+            }
+          }
+        }
+      }
+    }
+    """
+    
+    # Create payload
+    payload = json.dumps({'query': query})
+    
+    try:
+        # Make the request
+        response = requests.post(url, headers=headers, data=payload)
+        
+        # Check if request was successful
+        if response.status_code == 200:
+            data = response.json()
+            
+            # Extract the trade data
+            trades = data['data']['EVM']['DEXTradeByTokens']
+            
+            if trades:
+                trade = trades[0]  # Get the latest trade
+                
+                #print("=== Latest Token Price ===")
+                #print(f"Block Number: {trade['Block']['Number']}")
+                #print(f"Block Time: {trade['Block']['Time']}")
+                #print(f"Token: {trade['Trade']['Currency']['Symbol']} ({trade['Trade']['Currency']['Name']})")
+                #print(f"Price in USDT: {trade['Trade']['Price']}")
+                #print(f"Price in USD: ${trade['Trade']['PriceInUSD']}")
+                #print(f"DEX: {trade['Trade']['Dex']['ProtocolName']}")
+                
+                result = {
+                    'block_number': trade['Block']['Number'],
+                    'block_time': trade['Block']['Time'],
+                    'token_symbol': trade['Trade']['Currency']['Symbol'],
+                    'price_usdt': float(trade['Trade']['Price']),
+                    'price_usd': float(trade['Trade']['PriceInUSD']),
+                    'dex': trade['Trade']['Dex']['ProtocolName']
+                }
+                print(result) #Log
+
+                usdt_price = float(trade['Trade']['Price'])
+                return usdt_price 
+            else:
+                print("Bitquery - No trades found for this token pair")
+                return None
+                
+        else:
+            print(f"Bitquery - Request failed with status code: {response.status_code}")
+            print(f"Error: {response.text}")
+            return None
+            
+    except Exception as e:
+        print(f"Bitquery - An error occurred: {str(e)}")
+        return None
+
+def coinmarketcap_get_latest_price_by_id(api_id):
     url = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest"
 
     #Possibility to use global variable. Make easier for testing on different environment.
@@ -170,7 +276,7 @@ def calculate_target_amount(amount_in, target_price, slippage_tolerance):
 
 def main_loop():
     
-    #Possibility to use global variable. Make easier for testing on different environment.
+    #Possibility to use global variable. Make easier for testing on different environments.
     global wallet_address, private_key
     if wallet_address == '':
         wallet_address = access_secret_payload("wallet_address", "2") #st.secrets['wallet_address']
@@ -181,7 +287,7 @@ def main_loop():
     print(f"🦊 PancakeSwap Monitor - {wallet_address}")
 
     #Version (for control in the Cloud)
-    print("Version 1.0.2")
+    print("Version 1.0.3")
 
     # Setup Web3
     print("Starting Web3 Component...")
@@ -190,28 +296,11 @@ def main_loop():
     web3.middleware_onion.inject(geth_poa_middleware, layer=0)
 
     # Load ABI
-    print("Loading ABI file...")
+    print("Loading ABI files...")
     with open('pancake_abi.json', 'r') as abi_file:
         router_abi = json.load(abi_file)
     with open('erc20_abi.json', 'r') as abi_file:
         token_abi = json.load(abi_file)
-    #token_abi = [
-    #    {
-    #        "constant": True,
-    #        "inputs": [{"name": "_owner", "type": "address"}],
-    #        "name": "balanceOf",
-    #        "outputs": [{"name": "balance", "type": "uint256"}],
-    #        "type": "function",
-    #    },
-    #    {
-    #        "constant": True,
-    #        "inputs": [],
-    #        "name": "decimals",
-    #        "outputs": [{"name": "", "type": "uint8"}],
-    #        "type": "function",
-    #    },
-    #]
-
 
     # Contract setup
     print("Setting up contracts...")
@@ -228,7 +317,7 @@ def main_loop():
     # Parameters
     print("Setting up parameters...")
     target_price_buy = 0.9800
-    target_price_sell = 0.9960
+    target_price_sell = 0.9980
     amount_in = 10           #web3.to_wei(100, 'ether')
     slippage_tolerance = 0.005          # 0.5%
     amount_out_min = calculate_target_amount(amount_in, target_price_buy, slippage_tolerance)
@@ -249,11 +338,19 @@ def main_loop():
         print("Checking Wallet balances...")
         bnb_balance = web3.eth.get_balance(Web3.to_checksum_address(wallet_address))
         bnb_balance = web3.from_wei(bnb_balance, 'ether')
-        print("BNB balance", f"{bnb_balance:.6f}")
         usdt_balance = get_token_balance(web3, usdt_address, token_abi, wallet_address)
-        print("USDT balance", f"${usdt_balance:.4f}")
         usda_balance = get_token_balance(web3, usda_address, token_abi, wallet_address)
-        print("USDA balance", f"${usda_balance:.4f}")
+        #print("BNB balance", f"{bnb_balance:.6f}")
+        #print("USDT balance", f"${usdt_balance:.4f}")
+        #print("USDA balance", f"${usda_balance:.4f}")
+        # Merge into dictionary
+        balances = {
+            "BNB": round(float(bnb_balance), 6),
+            "USDT": round(float(usdt_balance), 4),
+            "USDA": round(float(usda_balance), 4)
+        }
+        # Print JSON for logging
+        print("Balances: ", json.dumps(balances))
 
         print("Request USDA price...")
         usda_price = get_usda_price()
