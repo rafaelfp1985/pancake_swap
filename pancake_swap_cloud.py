@@ -359,15 +359,23 @@ def main_loop():
     # Parameters
     #print("Setting up parameters...")
     target_price_buy = get_buy_target()
-    print(f"Target buy price: ${target_price_buy:.4f}")
+    #print(f"Target buy price: ${target_price_buy:.4f}")
     target_price_sell = get_sell_target()
-    print(f"Target sell price: ${target_price_sell:.4f}")
+    #print(f"Target sell price: ${target_price_sell:.4f}")
     #amount_in = 10           #web3.to_wei(100, 'ether')
     amount_in = get_buy_amount()
     slippage_tolerance = 0.005          # 0.5%
     amount_out_min = calculate_target_amount(amount_in, target_price_buy, slippage_tolerance)
-    print(f"Amount to buy: {amount_in:.2f} USDT")
+    #print(f"Amount to buy: {amount_in:.2f} USDT")
     #print(f"Expected USDA quantity: {amount_out_min:.4f}")
+    parameters = {
+        "BuyPrice": round(float(target_price_buy), 4), 
+        "SellPrice": round(float(target_price_sell), 4),
+        "BuyAmount": round(float(amount_in), 2),
+        "Slippage": round(float(slippage_tolerance), 4),
+        "AmountMininum": round(float(amount_out_min), 4)
+    }
+    print("Trade parameters:", json.dumps(parameters))
 
     #Check if token quantity needs to be approved
     amount_allowed = 1000
