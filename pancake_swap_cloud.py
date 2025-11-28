@@ -223,7 +223,7 @@ def bitquery_get_latest_price_by_USDT():
                     'price_usd': float(trade['Trade']['PriceInUSD']),
                     'dex': trade['Trade']['Dex']['ProtocolName']
                 }
-                print(result) #Log
+                print("Oracle information: ", result) #Log
 
                 usdt_price = float(trade['Trade']['Price'])
                 return usdt_price 
