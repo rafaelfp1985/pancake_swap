@@ -308,11 +308,11 @@ def get_buy_amount():
     #Check if Environment variable is set
     if "BUY_AMOUNT" in os.environ:
         try:
-            env_value = float(os.environ["TARGET_PRICE_SELL"])
+            env_value = float(os.environ["BUY_AMOUNT"])
             buy_amount = env_value
-            #print(f"Using TARGET_PRICE_BUY from environment: {target_price_buy}")
+            #print(f"Using BUY_AMOUNT from environment: {buy_amount}")
         except ValueError:
-            #print("Invalid TARGET_PRICE_BUY environment variable. Using default value.")
+            #print("Invalid BUY_AMOUNT environment variable. Using default value.")
             buy_amount = buy_amount
     return buy_amount
 
