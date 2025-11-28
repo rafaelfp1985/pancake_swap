@@ -326,7 +326,7 @@ def main_loop():
         private_key = access_secret_payload("wallet_private_key","2") #st.secrets['private_key']
 
     # Title
-    print(f"🦊 PancakeSwap Monitor - {wallet_address} - 🕒 Timestamp: {datetime.datetime.now().strftime("%d.%m.%Y %H:%M:%S")}")
+    print(f"🦊 PancakeSwap Monitor - {wallet_address} - 🕒 Timestamp: {datetime.datetime.now().strftime('%d.%m.%Y %H:%M:%S')}")
 
     #Version (for control in the Cloud)
     print("Version 1.0.4")
