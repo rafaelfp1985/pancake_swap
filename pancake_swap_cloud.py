@@ -7,6 +7,7 @@ import time
 import datetime
 import json
 import sys
+import os
 
 wallet_address = ""
 private_key = ""
@@ -68,7 +69,7 @@ def get_usda_price():
 
 # Approve token
 def check_and_approve_token_allowance(web3, wallet_address, private_key, amount_allowed, router_address, token_contract):
-    print("Approving token for swap...")
+    #print("Approving token for swap...")
     checksum_address = Web3.to_checksum_address(wallet_address)
 
     target_allowance = Web3.to_wei(amount_allowed, 'ether') #(10 ** decimals)
@@ -275,6 +276,46 @@ def calculate_target_amount(amount_in, target_price, slippage_tolerance):
 
     return target_amount
 
+def get_buy_target():
+    #Start with hardcoded value
+    target_price_buy = 0.9800
+    #Check if Environment variable is set
+    if "TARGET_PRICE_BUY" in os.environ:
+        try:
+            env_value = float(os.environ["TARGET_PRICE_BUY"])
+            target_price_buy = env_value
+            #print(f"Using TARGET_PRICE_BUY from environment: {target_price_buy}")
+        except ValueError:
+            #print("Invalid TARGET_PRICE_BUY environment variable. Using default value.")
+            target_price_buy = target_price_buy
+    return target_price_buy
+
+def get_sell_target():
+    target_price_sell = 0.9980
+    #Check if Environment variable is set
+    if "TARGET_PRICE_SELL" in os.environ:
+        try:
+            env_value = float(os.environ["TARGET_PRICE_SELL"])
+            target_price_sell = env_value
+            #print(f"Using TARGET_PRICE_BUY from environment: {target_price_buy}")
+        except ValueError:
+            #print("Invalid TARGET_PRICE_BUY environment variable. Using default value.")
+            target_price_sell = target_price_sell
+    return target_price_sell
+
+def get_buy_amount():
+    buy_amount = 10
+    #Check if Environment variable is set
+    if "BUY_AMOUNT" in os.environ:
+        try:
+            env_value = float(os.environ["TARGET_PRICE_SELL"])
+            buy_amount = env_value
+            #print(f"Using TARGET_PRICE_BUY from environment: {target_price_buy}")
+        except ValueError:
+            #print("Invalid TARGET_PRICE_BUY environment variable. Using default value.")
+            buy_amount = buy_amount
+    return buy_amount
+
 def main_loop():
     
     #Possibility to use global variable. Make easier for testing on different environments.
@@ -285,14 +326,14 @@ def main_loop():
         private_key = access_secret_payload("wallet_private_key","2") #st.secrets['private_key']
 
     # Title
-    print(f"🦊 PancakeSwap Monitor - {wallet_address}")
+    print(f"🦊 PancakeSwap Monitor - {wallet_address} - 🕒 Timestamp: {datetime.datetime.now().strftime("%d.%m.%Y %H:%M:%S")}")
 
     #Version (for control in the Cloud)
-    print("Version 1.0.3")
+    print("Version 1.0.4")
 
     # Setup Web3
-    print("Starting Web3 Component...")
-    print("🕒 Timestamp: ", datetime.datetime.now().strftime("%d.%m.%Y %H:%M:%S"))
+    #print("Starting Web3 Component...")
+    #print("🕒 Timestamp: ", datetime.datetime.now().strftime("%d.%m.%Y %H:%M:%S"))
     web3 = Web3(Web3.HTTPProvider('https://bsc-dataseed.binance.org/'))
     web3.middleware_onion.inject(geth_poa_middleware, layer=0)
 
@@ -304,22 +345,25 @@ def main_loop():
         token_abi = json.load(abi_file)
 
     # Contract setup
-    print("Setting up contracts...")
+    #print("Setting up contracts...")
     router_address = Web3.to_checksum_address('0x10ED43C718714eb63d5aA57B78B54704E256024E') #Pancakeswap router
     router_contract = web3.eth.contract(address=router_address, abi=router_abi)
 
     # Tokens
-    print("Setting up Tokens...")
+    #print("Setting up Tokens...")
     usdt_address = Web3.to_checksum_address('0x55d398326f99059fF775485246999027B3197955')
     usdt_contract = web3.eth.contract(address=usdt_address, abi=token_abi)
     usda_address = Web3.to_checksum_address('0x17EAfd08994305D8AcE37EfB82F1523177eC70EE')
     usda_contract = web3.eth.contract(address=usda_address, abi=token_abi)
 
     # Parameters
-    print("Setting up parameters...")
-    target_price_buy = 0.9800
-    target_price_sell = 0.9980
-    amount_in = 10           #web3.to_wei(100, 'ether')
+    #print("Setting up parameters...")
+    target_price_buy = get_buy_target()
+    print(f"Target buy price: ${target_price_buy:.4f}")
+    target_price_sell = get_sell_target()
+    print(f"Target sell price: ${target_price_sell:.4f}")
+    #amount_in = 10           #web3.to_wei(100, 'ether')
+    amount_in = get_buy_amount()
     slippage_tolerance = 0.005          # 0.5%
     amount_out_min = calculate_target_amount(amount_in, target_price_buy, slippage_tolerance)
     print(f"Amount to buy: {amount_in:.2f} USDT")
@@ -327,16 +371,17 @@ def main_loop():
 
     #Check if token quantity needs to be approved
     amount_allowed = 1000
-    print(f"Checking if USDT is approved...")
+    print(f"Checking token approval...")
+    #print(f"Checking if USDT is approved...")
     check_and_approve_token_allowance(web3, wallet_address, private_key, amount_allowed, router_address, usdt_contract)
-    print(f"Checking if USDA is approved...")
+    #print(f"Checking if USDA is approved...")
     check_and_approve_token_allowance(web3, wallet_address, private_key, amount_allowed, router_address, usda_contract)
 
     # UI
     try:
         #while True:
         #Checking Tokens balance
-        print("Checking Wallet balances...")
+        #print("Checking Wallet balances...")
         bnb_balance = web3.eth.get_balance(Web3.to_checksum_address(wallet_address))
         bnb_balance = web3.from_wei(bnb_balance, 'ether')
         usdt_balance = get_token_balance(web3, usdt_address, token_abi, wallet_address)
@@ -351,18 +396,18 @@ def main_loop():
             "USDA": round(float(usda_balance), 4)
         }
         # Print JSON for logging
-        print("Balances: ", json.dumps(balances))
+        print("Wallet balances: ", json.dumps(balances))
 
-        print("Request USDA price...")
+        #print("Request USDA price...")
         usda_price = get_usda_price()
-        print("Current USDA Price", f"${usda_price:.4f}")
+        print("💵 Current USDA Price", f"${usda_price:.4f}")
 
         #Check if minimum price is reached. If yes, buy it
         #if price < 1.96: #This is only for test
         #Price reach. Spend USDT
         if usda_price < target_price_buy:
             if usdt_balance > amount_in:
-                print("🤑 Buying price condition met! Ready to swap.")
+                print("🤑 Buying price condition met! Ready to swap!")
                 #Provide human readable numbers here. The convertion to uint will happen inside the swap transaction
                 tx_hash = swap_tokens(web3=web3, wallet_address=wallet_address, private_key=private_key, amount_in=amount_in, amount_out_min=amount_out_min, router_contract=router_contract,source_token_address=usdt_address,destination_token_address=usda_address)
                 print(f"Swap executed. Tx hash: `{tx_hash}`")
