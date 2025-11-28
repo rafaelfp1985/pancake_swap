@@ -424,6 +424,13 @@ def main_loop():
                 # Check status
                 if receipt["status"] == 1:
                     print("✅ Transaction succeeded!")
+                    #Check the effective price
+                    new_usdt_balance = get_token_balance(web3, usdt_address, token_abi, wallet_address)
+                    effective_price = (usdt_balance - new_usdt_balance) / amount_in
+                    print(f"Effective USDA buy price: ${effective_price:.4f}")
+                    #Difference to target price
+                    price_diff = effective_price - usda_price
+                    print(f"Difference to target buy price: ${price_diff:.4f}")
                 else:
                     print("❌ Transaction failed.")
             else: #Not enough money
@@ -445,6 +452,13 @@ def main_loop():
                 # Check status
                 if receipt["status"] == 1:
                     print("✅ Transaction succeeded!")
+                    #Check the effective price
+                    new_usdt_balance = get_token_balance(web3, usdt_address, token_abi, wallet_address)
+                    effective_price = (new_usdt_balance - usdt_balance) / amount_in
+                    print(f"Effective USDA sell price: ${effective_price:.4f}")
+                    #Difference to target price
+                    price_diff = effective_price - usda_price
+                    print(f"Difference to target sell price: ${price_diff:.4f}")
                 else:
                     print("❌ Transaction failed.")
             else:
