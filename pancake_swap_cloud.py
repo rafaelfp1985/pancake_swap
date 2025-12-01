@@ -425,11 +425,15 @@ def main_loop():
                 if receipt["status"] == 1:
                     print("✅ Transaction succeeded!")
                     #Check the effective price
-                    new_usdt_balance = get_token_balance(web3, usdt_address, token_abi, wallet_address)
-                    effective_price = (usdt_balance - new_usdt_balance) / amount_in
+                    new_usda_balance = get_token_balance(web3, usda_address, token_abi, wallet_address)
+                    purchase_amount = new_usda_balance - usda_balance
+                    if purchase_amount == 0:
+                        effective_price = 0 #Wrong, but gives a hint that something is wrong
+                    else:
+                        effective_price = amount_in / purchase_amount
                     print(f"Effective USDA buy price: ${effective_price:.4f}")
                     #Difference to target price
-                    price_diff = effective_price - usda_price
+                    price_diff = usda_price - effective_price #A positive number indicates a good trade. Negative, a bad one 
                     print(f"Difference to target buy price: ${price_diff:.4f}")
                 else:
                     print("❌ Transaction failed.")
@@ -443,6 +447,7 @@ def main_loop():
         if usda_price > target_price_sell:
             if usda_balance > amount_in:
                 #For USDA, the amount_out needs to be adjusted, as it will be less, depending on the price
+                #The target price for sell should be enough for this calculation, as we expect at least this price
                 amount_out_min = amount_in * target_price_sell
                 print("🤑 Selling price condition met! Ready to swap.")
                 tx_hash = swap_tokens(web3=web3, wallet_address=wallet_address, private_key=private_key, amount_in=amount_in, amount_out_min=amount_out_min, router_contract=router_contract,source_token_address=usda_address,destination_token_address=usdt_address)
@@ -454,10 +459,14 @@ def main_loop():
                     print("✅ Transaction succeeded!")
                     #Check the effective price
                     new_usdt_balance = get_token_balance(web3, usdt_address, token_abi, wallet_address)
-                    effective_price = (new_usdt_balance - usdt_balance) / amount_in
+                    purchase_amount = new_usdt_balance - usdt_balance
+                    if purchase_amount == 0:
+                        effective_price = 0 #Wrong, but gives a hint that something is wrong
+                    else:
+                        effective_price = purchase_amount/ amount_in
                     print(f"Effective USDA sell price: ${effective_price:.4f}")
                     #Difference to target price
-                    price_diff = effective_price - usda_price
+                    price_diff = effective_price - usda_price #A positive number indicates a good trade. Negative, a bad one 
                     print(f"Difference to target sell price: ${price_diff:.4f}")
                 else:
                     print("❌ Transaction failed.")
