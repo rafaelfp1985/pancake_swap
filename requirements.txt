@@ -2,7 +2,7 @@ requests==2.32.5
 web3==6.15.1
 google-cloud-secret-manager
 streamlit>=1.24.1
-protobuf>=4.25.8 # not directly required, pinned by Snyk to avoid a vulnerability
+protobuf>=6.31.1 # not directly required, pinned by Snyk to avoid a vulnerability
 aiohttp>=3.9.0 # not directly required, pinned by Snyk to avoid a vulnerability
 zipp>=3.19.1 # not directly required, pinned by Snyk to avoid a vulnerability
 urllib3>=2.5.0 # not directly required, pinned by Snyk to avoid a vulnerability
