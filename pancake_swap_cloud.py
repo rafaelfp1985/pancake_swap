@@ -108,10 +108,8 @@ def swap_tokens(web3, wallet_address, private_key, amount_in, amount_out_min, ro
     
     #Convert from human number to uint256
     uint_amount_in = int( amount_in * 10**18 )
-    #Lets trust the price and just swap it without minimum price. 
-    #Backgroung is: minimum amount is really hard to get because of difference between the price oracle and the DEX
-    #Just start the transaction and hope for the best...
-    uint_amount_out_min = int( amount_in * 10**18 )
+    #Use again the amount_out_min. This should be determined outside this function
+    uint_amount_out_min = int( amount_out_min * 10**18 )
 
     deadline = int(time.time()) + 60 * 20
     #tx = router_contract.functions.swapExactTokensForTokens(
@@ -417,6 +415,8 @@ def main_loop():
             if usdt_balance > amount_in:
                 print("🤑 Buying price condition met! Ready to swap!")
                 #Provide human readable numbers here. The convertion to uint will happen inside the swap transaction
+                #For buying, take the risk and use the amount_out_min as the same as amount_in
+                amount_out_min = amount_in
                 tx_hash = swap_tokens(web3=web3, wallet_address=wallet_address, private_key=private_key, amount_in=amount_in, amount_out_min=amount_out_min, router_contract=router_contract,source_token_address=usdt_address,destination_token_address=usda_address)
                 print(f"Swap executed. Tx hash: `{tx_hash}`")
                 # Wait for the transaction receipt
