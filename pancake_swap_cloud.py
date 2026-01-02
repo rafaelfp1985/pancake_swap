@@ -63,8 +63,11 @@ def get_usda_price():
     #print("Looking for the USDA price...")
     #Use Coinmarketcap API
     #token_price = coinmarketcap_get_latest_price_by_id(37721)
-    #Use Bitquery API. The prices here are closed to the ones on Pancakewap
-    token_price = bitquery_get_latest_price_by_USDT()
+    #Use Bitquery API. The prices here are closer to the ones on Pancakewap
+    #token_price = bitquery_get_latest_price_by_USDT()
+    #User Coingecko API
+    token_price = coingecko_get_latest_price_by_address("bsc","0x17eafd08994305d8ace37efb82f1523177ec70ee")
+
     return token_price
 
 # Approve token
@@ -266,6 +269,26 @@ def coinmarketcap_get_latest_price_by_id(api_id):
 
     return token_price
 
+def coingecko_get_latest_price_by_address(network, address):
+
+    url = f"https://api.coingecko.com/api/v3/onchain/simple/networks/{network}/token_price/{address}"
+
+    #Possibility to use global variable. Make easier for testing on different environment.
+    if price_oracle_api_key == '':
+        api_key = access_secret_payload("CoinGecko_APIKey","1") 
+    else:
+        api_key = price_oracle_api_key
+
+    headers = {"x-cg-demo-api-key": api_key}
+
+    response = requests.get(url, headers=headers)
+
+    data = response.json() # Convert JSON string → Python dict 
+    price_str = data["data"]["attributes"]["token_prices"][address] 
+    token_price = float(price_str)
+
+    return token_price
+
 def calculate_target_amount(amount_in, target_price, slippage_tolerance):
     
     target_amount = 0
@@ -324,7 +347,7 @@ def main_loop():
         private_key = access_secret_payload("wallet_private_key","2") #st.secrets['private_key']
 
     #Version (for control in the Cloud)
-    print("Version 1.0.4")
+    print("Version 1.0.5")
 
     # Title
     print(f"🦊 PancakeSwap Monitor - {wallet_address} - 🕒 Timestamp: {datetime.datetime.now().strftime('%d.%m.%Y %H:%M:%S')}")
