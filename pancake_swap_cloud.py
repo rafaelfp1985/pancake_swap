@@ -348,7 +348,7 @@ def main_loop():
         private_key = access_secret_payload("wallet_private_key","2") #st.secrets['private_key']
 
     #Version (for control in the Cloud)
-    print("Version 1.0.5")
+    print("Version 1.0.6")
 
     # Title
     print(f"🦊 PancakeSwap Monitor - {wallet_address} - 🕒 Timestamp: {datetime.datetime.now().strftime('%d.%m.%Y %H:%M:%S')}")
@@ -473,6 +473,7 @@ def main_loop():
                 #For USDA, the amount_out needs to be adjusted, as it will be less, depending on the price
                 #The target price for sell should be enough for this calculation, as we expect at least this price
                 amount_out_min = amount_in * target_price_sell
+                amount_out_min = 0 #Keep it zero. Trust the exchange.
                 print("🤑 Selling price condition met! Ready to swap.")
                 tx_hash = swap_tokens(web3=web3, wallet_address=wallet_address, private_key=private_key, amount_in=amount_in, amount_out_min=amount_out_min, router_contract=router_contract,source_token_address=usda_address,destination_token_address=usdt_address)
                 print(f"Swap executed. Tx hash: `{tx_hash}`")
