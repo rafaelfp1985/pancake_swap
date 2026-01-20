@@ -11,10 +11,12 @@ RUN pip install -r requirements.txt
 
 # Copy the application code
 COPY pancake_swap_cloud.py .
+COPY price_fetcher/ ./price_fetcher/
 
 # Copy other files that are needed
 COPY pancake_abi.json .
 COPY erc20_abi.json .
+COPY v3_pool_abi.json .
 
 # Command to run your script when the container starts
 # The '-u' flag is important to unbuffer stdout/stderr in Python
