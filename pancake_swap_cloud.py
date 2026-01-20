@@ -1,14 +1,19 @@
+#Some crazy stuff
 from re import A
 from web3 import Web3
 from web3.middleware import geth_poa_middleware
 from google.cloud import secretmanager
 
+#Standard libraries
 import requests
 import time
 import datetime
 import json
 import sys
 import os
+
+#Local classes
+from price_fetcher.PancakePriceFetcher import PancakePriceFetcher
 
 wallet_address = ""
 private_key = ""
@@ -62,12 +67,25 @@ def get_token_balance(web3, token_address: str, abi: list, wallet_address: str) 
 # Price fetcher
 def get_usda_price():
     #print("Looking for the USDA price...")
+    
     #Use Coinmarketcap API
     #token_price = coinmarketcap_get_latest_price_by_id(37721)
+    
     #Use Bitquery API. The prices here are closer to the ones on Pancakewap
     #token_price = bitquery_get_latest_price_by_USDT()
-    #User Coingecko API
-    token_price = coingecko_get_latest_price_by_address("bsc","0x17eafd08994305d8ace37efb82f1523177ec70ee")
+    
+    #Use Coingecko API
+    #token_price = coingecko_get_latest_price_by_address("bsc","0x17eafd08994305d8ace37efb82f1523177ec70ee")
+
+    #Use Pancakeswap on-chain price fetcher
+    fetcher = PancakePriceFetcher( 
+        rpc_url="https://bsc-dataseed.binance.org/", 
+        token="0x17EAfd08994305D8AcE37EfB82F1523177eC70EE", 
+        stable="0x55d398326f99059fF775485246999027B3197955",
+        v2_pool="0xDe66f1b24002c1d743AD1EF13cD4B2474295A6F6", 
+        v3_pool="0x88472655a1F7a7a718fF4f19e7A2a6595A09f680", 
+        v3_abi_path="v3_pool_abi.json" ) 
+    token_price = fetcher.get_weighted_price()
 
     return token_price
 
@@ -348,7 +366,7 @@ def main_loop():
         private_key = access_secret_payload("wallet_private_key","2") #st.secrets['private_key']
 
     #Version (for control in the Cloud)
-    print("Version 1.0.6")
+    print("Version 1.0.7")
 
     # Title
     print(f"🦊 PancakeSwap Monitor - {wallet_address} - 🕒 Timestamp: {datetime.datetime.now().strftime('%d.%m.%Y %H:%M:%S')}")
